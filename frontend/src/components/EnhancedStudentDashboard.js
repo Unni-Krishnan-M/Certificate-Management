@@ -79,6 +79,21 @@ const EnhancedStudentDashboard = () => {
     }
   };
 
+  const handleDelete = async (certificateId) => {
+    if (!window.confirm('Are you sure you want to delete this certificate? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await api.delete(`/api/student/certificates/${certificateId}`);
+      setMessage('Certificate deleted successfully!');
+      fetchData(); // Refresh the certificates list
+    } catch (error) {
+      console.error('Delete error:', error);
+      setError(error.response?.data?.error || 'Failed to delete certificate');
+    }
+  };
+
   const handleView = async (certificate) => {
     // Open window immediately to avoid popup blockers
     const newWindow = window.open('', '_blank');
@@ -106,19 +121,6 @@ const EnhancedStudentDashboard = () => {
         newWindow.document.body.innerHTML = '<h3 style="color:red;text-align:center;">Failed to load certificate.</h3><p style="text-align:center;">Please try downloading instead.</p>';
       } else {
         setError('Failed to view certificate');
-      }
-    }
-  };
-
-  const handleDelete = async (certificateId) => {
-    if (window.confirm('Are you sure you want to delete this certificate?')) {
-      try {
-        await api.delete(`/api/student/certificates/${certificateId}`);
-        setMessage('Certificate deleted successfully');
-        fetchData();
-      } catch (error) {
-        console.error('Delete error:', error);
-        setError('Delete failed');
       }
     }
   };
