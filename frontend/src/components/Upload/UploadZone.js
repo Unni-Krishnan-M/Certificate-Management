@@ -98,7 +98,6 @@ const UploadZone = ({ onUploadSuccess }) => {
         setUploadProgress(prev => ({ ...prev, [i]: 0 }));
 
         await api.post('/api/student/certificates/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (progressEvent) => {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             setUploadProgress(prev => ({ ...prev, [i]: progress }));
@@ -123,7 +122,12 @@ const UploadZone = ({ onUploadSuccess }) => {
 
       onUploadSuccess?.();
     } catch (error) {
-      alert(error.response?.data?.error || 'Upload failed');
+      console.error('Upload error:', error);
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Upload failed';
+      alert(`Upload failed: ${errorMessage}`);
     } finally {
       setUploading(false);
     }

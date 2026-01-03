@@ -26,16 +26,28 @@ const EnhancedStudentDashboard = () => {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const [certsResponse, analyticsResponse] = await Promise.all([
         api.get('/api/student/certificates'),
-        api.get('/api/analytics/student/dashboard').catch(() => ({ data: { totalUploaded: 0, verified: 0, pending: 0, rejected: 0, recentUploads: [] } }))
+        api.get('/api/analytics/student/dashboard')
       ]);
 
       setCertificates(certsResponse.data);
       setAnalytics(analyticsResponse.data);
+      setError(''); // Clear any previous errors
     } catch (error) {
       console.error('Fetch error:', error);
-      setError('Failed to fetch data');
+      setError('Failed to fetch data. Please check your connection and try again.');
+      
+      // Set empty data instead of fake data
+      setCertificates([]);
+      setAnalytics({
+        totalUploaded: 0,
+        verified: 0,
+        pending: 0,
+        rejected: 0,
+        recentUploads: []
+      });
     } finally {
       setLoading(false);
     }

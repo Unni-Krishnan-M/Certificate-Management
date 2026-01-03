@@ -47,7 +47,8 @@ const AuthenticatedPreview = ({ certificate, userRole, onError }) => {
         console.log('AuthenticatedPreview: User role:', userRole);
 
         const response = await api.get(url, {
-          responseType: 'blob'
+          responseType: 'blob',
+          timeout: 30000 // 30 second timeout
         });
 
         console.log('AuthenticatedPreview: Response received:', {
@@ -62,6 +63,12 @@ const AuthenticatedPreview = ({ certificate, userRole, onError }) => {
           throw new Error('Empty response');
         }
 
+        // Verify the blob is valid
+        if (!(response.data instanceof Blob)) {
+          console.error('AuthenticatedPreview: Response is not a valid blob');
+          throw new Error('Invalid response format');
+        }
+
         if (active) {
           const blobUrl = URL.createObjectURL(response.data);
           console.log('AuthenticatedPreview: Created blob URL:', blobUrl);
@@ -74,8 +81,26 @@ const AuthenticatedPreview = ({ certificate, userRole, onError }) => {
           message: err.message,
           status: err.response?.status,
           statusText: err.response?.statusText,
-          data: err.response?.data
+          data: err.response?.data,
+          config: {
+            url: err.config?.url,
+            method: err.config?.method,
+            headers: err.config?.headers
+          }
         });
+        
+        // Log specific error information if available
+        if (err.response?.data) {
+          try {
+            const errorData = typeof err.response.data === 'string' 
+              ? JSON.parse(err.response.data) 
+              : err.response.data;
+            console.error('AuthenticatedPreview: Server error details:', errorData);
+          } catch (parseError) {
+            console.error('AuthenticatedPreview: Could not parse error data:', err.response.data);
+          }
+        }
+        
         if (active) {
           setError(true);
           onError?.(err);
@@ -88,10 +113,12 @@ const AuthenticatedPreview = ({ certificate, userRole, onError }) => {
       }
     };
 
-    loadPreview();
+    // Add a small delay to prevent too many simultaneous requests
+    const timeoutId = setTimeout(loadPreview, 100);
 
     return () => {
       active = false;
+      clearTimeout(timeoutId);
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
       }
@@ -121,10 +148,12 @@ const AuthenticatedPreview = ({ certificate, userRole, onError }) => {
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             onError={(e) => {
               console.error('AuthenticatedPreview: Image load error:', e);
-              setError(true);
+              // Don't immediately set error - the image might still be loading
+              setTimeout(() => setError(true), 2000);
             }}
             onLoad={() => {
               console.log('AuthenticatedPreview: Image loaded successfully');
+              setError(false); // Clear any previous errors
             }}
           />
         </div>
@@ -142,25 +171,34 @@ const AuthenticatedPreview = ({ certificate, userRole, onError }) => {
           style={{ width: '100%', height: '100%', border: 'none' }}
           onError={(e) => {
             console.error('AuthenticatedPreview: Iframe load error:', e);
-            setError(true);
+            // Don't immediately set error - the iframe might still be loading
+            setTimeout(() => setError(true), 3000);
           }}
           onLoad={() => {
             console.log('AuthenticatedPreview: Iframe loaded successfully');
+            setError(false); // Clear any previous errors
           }}
         />
       </div>
     );
   }
 
-  // Fallback / Error State
+  // Fallback / Error State - but still try to be useful
   return (
     <div className="file-placeholder" style={{ cursor: 'pointer' }}>
       <div className="file-icon">{getFileTypeIcon(certificate.fileType)}</div>
       <div className="file-info">
         <span className="file-name">{certificate.fileName}</span>
         <span className="file-type">
-          {error ? 'Preview unavailable' : 'Click to preview'}
+          {error ? 'File not available' : 'Click to preview'}
         </span>
+        {error && (
+          <div style={{ fontSize: '0.8em', color: '#666', marginTop: '5px' }}>
+            This is a sample certificate without an actual file.
+            <br />
+            Upload a real certificate to view it.
+          </div>
+        )}
       </div>
     </div>
   );

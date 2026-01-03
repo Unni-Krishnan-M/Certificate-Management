@@ -5,6 +5,8 @@ const CertificateModal = ({ certificate, userRole, isOpen, onClose }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true); // Default to fullscreen
+  const [showHint, setShowHint] = useState(true);
 
   const fileType = certificate?.fileType?.toLowerCase() || '';
   const fileName = certificate?.fileName?.toLowerCase() || '';
@@ -17,6 +19,45 @@ const CertificateModal = ({ certificate, userRole, isOpen, onClose }) => {
     fileName.endsWith('.jpeg') ||
     fileName.endsWith('.png') ||
     fileName.endsWith('.gif');
+
+  // Hide hint after 3 seconds
+  useEffect(() => {
+    if (isOpen && isFullscreen) {
+      setShowHint(true);
+      const timer = setTimeout(() => setShowHint(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, isFullscreen]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyPress = (e) => {
+      switch (e.key) {
+        case 'Escape':
+          onClose();
+          break;
+        case 'f':
+        case 'F':
+          if (!e.ctrlKey && !e.metaKey) {
+            setIsFullscreen(!isFullscreen);
+          }
+          break;
+        case 'd':
+        case 'D':
+          if (!e.ctrlKey && !e.metaKey) {
+            handleDownload();
+          }
+          break;
+        default:
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [isOpen, isFullscreen, onClose]);
 
   useEffect(() => {
     if (!isOpen || !certificate?.certificateId) {
@@ -95,11 +136,21 @@ const CertificateModal = ({ certificate, userRole, isOpen, onClose }) => {
     }
   };
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="certificate-modal-overlay" onClick={onClose}>
-      <div className="certificate-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div 
+      className={`certificate-modal-overlay ${isFullscreen ? '' : 'windowed'}`} 
+      onClick={onClose}
+    >
+      <div 
+        className={`certificate-modal-content ${isFullscreen ? '' : 'windowed'}`} 
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="modal-header">
           <div className="modal-title">
@@ -107,10 +158,25 @@ const CertificateModal = ({ certificate, userRole, isOpen, onClose }) => {
             <p>{certificate.fileName}</p>
           </div>
           <div className="modal-actions">
-            <button className="modal-btn download" onClick={handleDownload} title="Download">
+            <button 
+              className="modal-btn download" 
+              onClick={handleDownload} 
+              title="Download (Press D)"
+            >
               📥 Download
             </button>
-            <button className="modal-btn close" onClick={onClose} title="Close">
+            <button 
+              className="modal-btn fullscreen" 
+              onClick={toggleFullscreen} 
+              title={`${isFullscreen ? 'Windowed' : 'Fullscreen'} View (Press F)`}
+            >
+              {isFullscreen ? '🗗' : '⛶'} {isFullscreen ? 'Window' : 'Fullscreen'}
+            </button>
+            <button 
+              className="modal-btn close" 
+              onClick={onClose} 
+              title="Close (Press Esc)"
+            >
               ✕
             </button>
           </div>
@@ -177,6 +243,13 @@ const CertificateModal = ({ certificate, userRole, isOpen, onClose }) => {
                   title={certificate.certificateName}
                 />
               )}
+            </div>
+          )}
+
+          {/* Keyboard shortcuts hint */}
+          {isFullscreen && showHint && (
+            <div className="keyboard-hint">
+              Press F for windowed view • D to download • Esc to close
             </div>
           )}
         </div>

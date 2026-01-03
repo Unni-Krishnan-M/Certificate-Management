@@ -1,0 +1,68 @@
+# Build artifacts
+backend/target/
+frontend/build/
+frontend/dist/
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Cache files
+frontend/.cache/
+frontend/node_modules/.cache/
+.eslintcache
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test files
+test-*.html
+*-test.html
+diagnose-*.js
+simple-*.html
+
+# Temporary files
+*.tmp
+*.temp
+*.txt
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Spring Boot
+application-*.properties
+application-*.yml
+!application.properties
+!application.yml

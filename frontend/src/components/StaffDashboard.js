@@ -28,16 +28,28 @@ const StaffDashboard = () => {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const [certsResponse, analyticsResponse] = await Promise.all([
         api.get('/api/staff/certificates'),
-        api.get('/api/analytics/staff/dashboard').catch(() => ({ data: { totalCertificates: 0, pendingReview: 0, verified: 0, rejected: 0, recentActivity: [] } }))
+        api.get('/api/analytics/staff/dashboard')
       ]);
 
       setCertificates(certsResponse.data);
       setAnalytics(analyticsResponse.data);
+      setError(''); // Clear any previous errors
     } catch (error) {
       console.error('Fetch error:', error);
-      setError('Failed to fetch data');
+      setError('Failed to fetch data. Please check your connection and try again.');
+      
+      // Set empty data instead of fake data
+      setCertificates([]);
+      setAnalytics({
+        totalCertificates: 0,
+        pendingReview: 0,
+        verified: 0,
+        rejected: 0,
+        recentActivity: []
+      });
     } finally {
       setLoading(false);
     }

@@ -106,6 +106,10 @@ public class CertificateService {
         certificateRepository.deleteById(certificateId);
     }
     
+    public Certificate saveCertificate(Certificate certificate) {
+        return certificateRepository.save(certificate);
+    }
+    
     public Map<String, Object> getStudentAnalytics(String username) {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new RuntimeException("User not found"));

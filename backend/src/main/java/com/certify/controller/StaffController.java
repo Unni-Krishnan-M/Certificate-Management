@@ -9,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -70,22 +72,103 @@ public class StaffController {
     }
     
     @GetMapping("/certificates/{id}/view")
-    public ResponseEntity<InputStreamResource> viewCertificate(@PathVariable String id) {
+    public ResponseEntity<?> viewCertificate(
+            @PathVariable String id,
+            @RequestParam(required = false) String token) {
         try {
+            System.out.println("StaffController: Viewing certificate " + id);
+            
+            // Get all certificates and log them for debugging
+            List<Certificate> allCertificates = certificateService.getAllCertificates();
+            System.out.println("StaffController: Found " + allCertificates.size() + " total certificates");
+            
+            Certificate certificate = allCertificates.stream()
+                .filter(c -> c.getCertificateId().equals(id))
+                .findFirst()
+                .orElse(null);
+            
+            if (certificate == null) {
+                System.err.println("Certificate not found with ID: " + id);
+                return ResponseEntity.status(404).body(Map.of(
+                    "error", "Certificate not found",
+                    "certificateId", id,
+                    "availableIds", allCertificates.stream().map(Certificate::getCertificateId).toList()
+                ));
+            }
+            
+            System.out.println("StaffController: Found certificate: " + certificate.getCertificateName() + 
+                             ", FileId: " + certificate.getFileId() + 
+                             ", FileType: " + certificate.getFileType() +
+                             ", FileName: " + certificate.getFileName());
+            
+            if (certificate.getFileId() == null || certificate.getFileId().isEmpty()) {
+                System.err.println("Certificate has no file ID: " + certificate.getCertificateId());
+                return ResponseEntity.status(404).body(Map.of(
+                    "error", "Certificate file not found",
+                    "certificateId", id
+                ));
+            }
+            
+            InputStream fileStream = fileStorageService.getFile(certificate.getFileId());
+            if (fileStream == null) {
+                System.err.println("File not found for fileId: " + certificate.getFileId());
+                return ResponseEntity.status(404).body(Map.of(
+                    "error", "File not found in storage",
+                    "fileId", certificate.getFileId()
+                ));
+            }
+            
+            InputStreamResource resource = new InputStreamResource(fileStream);
+            
+            // Determine content type - handle null/empty file types
+            String contentType = certificate.getFileType();
+            if (contentType == null || contentType.isEmpty()) {
+                contentType = "application/octet-stream";
+            }
+            
+            System.out.println("StaffController: Returning file with content type: " + contentType);
+            
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + certificate.getFileName() + "\"")
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
+        } catch (Exception e) {
+            System.err.println("Error viewing certificate " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Internal server error: " + e.getMessage(),
+                "certificateId", id
+            ));
+        }
+    }
+    
+    @GetMapping("/certificates/{id}/download")
+    public ResponseEntity<InputStreamResource> downloadCertificate(
+            @PathVariable String id,
+            @RequestParam(required = false) String token) {
+        try {
+            System.out.println("StaffController: Downloading certificate " + id);
+            
             Certificate certificate = certificateService.getAllCertificates().stream()
                 .filter(c -> c.getCertificateId().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Certificate not found"));
             
-            InputStreamResource resource = new InputStreamResource(
-                fileStorageService.getFile(certificate.getFileId())
-            );
+            InputStream fileStream = fileStorageService.getFile(certificate.getFileId());
+            InputStreamResource resource = new InputStreamResource(fileStream);
+            
+            String contentType = certificate.getFileType();
+            if (contentType == null || contentType.isEmpty()) {
+                contentType = "application/octet-stream";
+            }
             
             return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + certificate.getFileName() + "\"")
-                .contentType(MediaType.parseMediaType(certificate.getFileType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + certificate.getFileName() + "\"")
+                .contentType(MediaType.parseMediaType(contentType))
                 .body(resource);
         } catch (Exception e) {
+            System.err.println("Error downloading certificate " + id + ": " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.notFound().build();
         }
     }

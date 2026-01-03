@@ -25,6 +25,22 @@ public class AuthController {
         }
     }
     
+    @PostMapping("/create-user")
+    public ResponseEntity<?> createUser(@RequestBody Map<String, String> userRequest) {
+        try {
+            User user = new User();
+            user.setUsername(userRequest.get("username"));
+            user.setPassword(userRequest.get("password"));
+            user.setFullName(userRequest.get("fullName"));
+            user.setEmail(userRequest.get("email"));
+            user.setRole(User.Role.valueOf(userRequest.get("role")));
+            
+            return ResponseEntity.ok(authService.register(user));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         try {

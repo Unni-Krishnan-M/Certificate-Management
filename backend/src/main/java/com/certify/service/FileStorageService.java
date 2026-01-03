@@ -26,12 +26,18 @@ public class FileStorageService {
         ).toString();
     }
     
-    public InputStream getFile(String fileId) throws IOException {
-        GridFSFile file = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(fileId)));
-        if (file == null) {
-            throw new RuntimeException("File not found");
+    public InputStream getFile(String fileId) {
+        try {
+            GridFSFile file = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(fileId)));
+            if (file == null) {
+                System.out.println("FileStorageService: File not found with ID: " + fileId);
+                return null;
+            }
+            return gridFsTemplate.getResource(file).getInputStream();
+        } catch (Exception e) {
+            System.err.println("FileStorageService: Error retrieving file " + fileId + ": " + e.getMessage());
+            return null;
         }
-        return gridFsTemplate.getResource(file).getInputStream();
     }
     
     public void deleteFile(String fileId) {
