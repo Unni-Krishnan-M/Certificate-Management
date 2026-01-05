@@ -8,7 +8,7 @@ const Header = () => {
     <header className="app-header">
       <div className="header-left">
         <div className="app-brand">
-          <h1>CertiVault Pro</h1>
+          <h1>Certificate manager</h1>
           <span className="environment-badge">Academic Portal</span>
         </div>
       </div>
