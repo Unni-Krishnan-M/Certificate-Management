@@ -51,7 +51,7 @@ A comprehensive web-based certificate management system built with React fronten
 ### Backend Setup
 ```bash
 cd backend
-./mvnw spring-boot:run
+.\run.bat
 ```
 
 ### Frontend Setup
